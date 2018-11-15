@@ -9,7 +9,7 @@ let fileSystem = require("fs");
 let operatingSystem = require("os");
 
 // Converter
-let convert = require("./@converter/converter"); 
+let convert = require("./@converter/converter");
 
 // Init Directory
 var initDirectory = operatingSystem.homedir() + "/documents/@AutoSource";
