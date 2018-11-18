@@ -1,12 +1,4 @@
 
-// Load File System
-let fileSystem = require('fs');
-
-// Load Cheerio
-let cheerio = require('cheerio');
-
-var exports = module.exports = {};
-
 /*
 
     Created: November 9th, 2018
@@ -17,20 +9,32 @@ var exports = module.exports = {};
 
 */
 
+// Load File System
+let fileSystem = require('fs');
+
+// Load Cheerio
+let cheerio = require('cheerio');
+
+// Moment
+let moment = require("moment");
+
+// Set Exports Object
+var exports = module.exports = {};
+
 /*
 
-        Get Interger From Any String
-            - Accepts One Value (value)
-            * Update Over Time To Include More Advanced Queries
+    Get Interger From Any String
+        - Accepts One Value (value)
+        * Update Over Time To Include More Advanced Queries
 
-    */
-   let getInt = function(value = "") {
+*/
+let getInt = function(value = "") {
 
     // Algorithum to Parse Song Number
     var regex = /\d+/g;
 
     // Check If Song Number Exist
-    if(value.match(regex).length > 0){
+    if(value.match(regex).length > 0) {
 
         // Save Songe Value To Object
         return value.match(regex)[0];
@@ -61,10 +65,23 @@ let checkForMatch = function(value = "", checkValue = "") {
 
 }
 
+function removeNonASCII(str){
+    // Matches non-printable ASCII chars -
+    // http://en.wikipedia.org/wiki/ASCII#ASCII_printable_characters
+    return str.replace(/[^\x20-\x7E]/g, ' ');
+}
+
 exports.convertToJSON = function(initDirectory, location, documentName, index){
 
     // Read File
     fileSystem.readFile(location + documentName, 'utf8', function(err, data){
+
+        if(err) {
+
+            // Console Log Error
+            console.log(err);
+
+        }
 
         // Init Cheerio
         let $ = cheerio.load(data);
@@ -273,6 +290,19 @@ exports.convertToJSON = function(initDirectory, location, documentName, index){
                             combinedSource.date = info;
 
                             // Convert Schedule Date To Timestamp
+                            var brokeDate = removeNonASCII(info).replace("-", ' ').split(" ");
+
+                            if( parseInt(brokeDate[2]) ) {
+
+                                combinedSource.sDate = moment(brokeDate[0] +"-"+ brokeDate[1] +"-"+ scheduleYear, "MMMM-D-YYYY").format();
+                                combinedSource.eDate = moment(brokeDate[0] +"-"+ brokeDate[2] +"-"+ scheduleYear, "MMMM-D-YYYY").format();
+                                
+                            } else {
+
+                                combinedSource.sDate = moment(brokeDate[0] +"-"+ brokeDate[1] +"-"+ scheduleYear, "MMMM-D-YYYY").format();
+                                combinedSource.eDate = moment(brokeDate[2] +"-"+ brokeDate[3] +"-"+ scheduleYear, "MMMM-D-YYYY").format();
+
+                            }
 
                                 break;
 

@@ -1,12 +1,14 @@
 #!/usr/bin/env node
 
 // Required Files
-let program = require('commander');
 let colors = require("colors");
 let copy = require("recursive-copy");
-let unzipper = require("extract-zip");
 let fileSystem = require("fs");
+let inquire = require("inquirer");
+let mysql = require("mysql");
 let operatingSystem = require("os");
+let program = require('commander');
+let unzipper = require("extract-zip");
 
 // Converter
 let convert = require("./@converter/converter");
@@ -15,7 +17,7 @@ let convert = require("./@converter/converter");
 var initDirectory = operatingSystem.homedir() + "/documents/@AutoSource";
 
 program
-    .version("0.0.1")
+    .version("1.0.0")
     .description("A Program Made With Love");
 
 program
@@ -41,7 +43,7 @@ program
     });
 
 program
-    .command("output", )
+    .command("output")
     .action(function() {
 
         // Read @imports Directory
@@ -113,6 +115,146 @@ program
                     querySource(val);
 
                 }
+
+            });
+
+        });
+
+    });
+
+program
+    .command("push")
+    .action(function() {
+
+        inquire.prompt([
+            {
+                type: "input",
+                name: "host",
+                message: "Database Host",
+                default: "localhost"
+            },
+            {
+                type: "input",
+                name: "user",
+                message: "Database User",
+                default: "root"
+            },
+            {
+                type: "input",
+                name: "database",
+                message: "Database Name?",
+                default: "infoV2"
+            },
+            {
+                type: "input",
+                name: "password",
+                message: "Database Password?",
+                default: "mysql"
+            }
+        ])
+
+        .then(function(answers) {
+
+            // Database Connection
+            var connection = mysql.createConnection({
+                host: answers.host.trim(),
+                user: answers.user.trim(),
+                password: answers.password.trim(),
+                database: answers.database.trim()
+            });
+
+            // Connect To Database
+            connection.connect();
+
+            // Read JSON Folder
+            var getJSON = fileSystem.readdirSync(initDirectory + "/@json");
+
+            var itemsCounted = 0;
+
+            inquire.prompt([
+                {
+                    type: "list",
+                    name: "uploadType",
+                    message: "How are we uploading source material?",
+                    choices: ["Push", "Update"]
+                }
+            ]).then(function(answer) {
+
+                // Get Each JSON File
+                getJSON.forEach(function (fileName, index, array){
+
+                    itemsCounted++;
+
+                    // Remove Any NON JSON Files
+                    if(fileName.split(".")[1] === "json") {
+
+                        // Read Single File & Parse()
+                        var singleJSON = fileSystem.readFileSync(initDirectory + "/@json/" + fileName, 'utf8');
+                        var parseJSON = JSON.parse(singleJSON);
+
+                        var query = "SELECT * FROM `autosource` WHERE DATE(sDate) = DATE('"+ parseJSON["sDate"] +"') AND DATE(eDate) = DATE('"+ parseJSON['eDate'] +"')";
+
+                        connection.query(query, function(err, results, fields) {
+
+                            if (err) throw err;
+
+                            if(results.length < 1 && answer.uploadType === "Push") {
+
+                                var insertQuery = "INSERT INTO `autosource` SET ?";
+
+                                // Upload Schedules To Database
+                                connection.query(insertQuery, JSON.parse(singleJSON), function(err, results) {
+
+                                    if (err) throw err;
+
+                                    console.log( colors.green("\n + Source Uploaded: " + parseJSON['date']) );
+
+                                });
+
+                            } else if(results.length >= 1 && answer.uploadType === "Update") {
+
+                                var insertQuery = "UPDATE `autosource` SET ? WHERE date = '"+ parseJSON["date"] +"'";
+
+                                // Upload Schedules To Database
+                                connection.query(insertQuery, JSON.parse(singleJSON), function(err, results, fields) {
+
+                                    if (err) throw err;
+
+                                    // Log Succesful Update
+                                    console.log(colors.green("\n + Source Updated: ") + colors.grey(parseJSON['date']) + "\n");
+
+                                    // Log Results
+                                    console.log(results);
+
+                                });
+
+                            } else {
+
+                                // Log Up To Date Status
+                                console.log(colors.green("\n Up To Date: " + parseJSON['date']));
+
+                            }
+
+                        });
+
+                    }
+
+                    // If Items Have Been Succesfully Uploaded
+                    if(itemsCounted === array.length) {
+
+                        setTimeout(() => {
+
+                            // Ending Connection
+                            console.log(colors.yellow("\n Connection ended... \n"));
+                
+                            // End Connection
+                            connection.end();
+
+                        }, 5000);
+
+                    }
+
+                });
 
             });
 
