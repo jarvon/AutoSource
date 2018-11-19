@@ -1,6 +1,6 @@
 {
   "name": "autosource",
-  "version": "1.0.3",
+  "version": "1.0.2",
   "description": "Command Line Application For Auto Compiling Source Material",
   "main": "index.js",
   "preferGlobal": true,
