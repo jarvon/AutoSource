@@ -9,6 +9,7 @@ let mysql = require("mysql");
 let operatingSystem = require("os");
 let program = require('commander');
 let unzipper = require("extract-zip");
+let he = require("he");
 
 // Converter
 let convert = require("./@converter/converter");
@@ -31,7 +32,7 @@ program
             fileSystem.mkdirSync(initDirectory + "/@import", 0744);
             fileSystem.mkdirSync(initDirectory + "/@output", 0744);
             fileSystem.mkdirSync(initDirectory + "/@logs", 0744);
-            fileSystem.mkdirSync(initDirectory + "/@JSON", 0744);
+            fileSystem.mkdirSync(initDirectory + "/@json", 0744);
             console.log(colors.green(" + Directory (@AutoSource) succesfully created..."));
 
         } else {
@@ -160,7 +161,8 @@ program
                 host: answers.host.trim(),
                 user: answers.user.trim(),
                 password: answers.password.trim(),
-                database: answers.database.trim()
+                database: answers.database.trim(),
+                charset: "utf8"
             });
 
             // Connect To Database
@@ -200,10 +202,18 @@ program
 
                             if(results.length < 1 && answer.uploadType === "Push") {
 
+                                for (let key of Object.keys(parseJSON) ) {
+
+                                    parseJSON[key] = he.encode( parseJSON[key] );
+
+                                }
+
                                 var insertQuery = "INSERT INTO `autosource` SET ?";
 
+                                var sql = connection.format(insertQuery, parseJSON);
+
                                 // Upload Schedules To Database
-                                connection.query(insertQuery, JSON.parse(singleJSON), function(err, results) {
+                                connection.query(sql, function(err, results) {
 
                                     if (err) throw err;
 
