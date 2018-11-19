@@ -18,7 +18,7 @@ let convert = require("./@converter/converter");
 var initDirectory = operatingSystem.homedir() + "/documents/@AutoSource";
 
 program
-    .version("1.0.2")
+    .version("1.0.3")
     .description("A Program Made With Love");
 
 program
